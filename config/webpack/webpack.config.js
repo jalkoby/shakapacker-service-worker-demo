@@ -15,8 +15,13 @@ module.exports = merge(webpackConfig, {
       runtimeCaching: [
         {
           urlPattern: ({ sameOrigin, request }) => sameOrigin && request.destination == 'document',
-          handler: 'NetworkFirst',
-          options: {}
+          handler: 'StaleWhileRevalidate',
+          options: {
+            broadcastUpdate: {
+              channelName: 'swchannel',
+              options: { notifyAllClients: true }
+            }
+          }
         },
         {
           urlPattern: /\/api\/(trends|feed)$/,

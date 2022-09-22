@@ -19,6 +19,23 @@ import "./styles/application.scss"
 import { createRoot } from 'react-dom/client'
 import App from './App'
 
+let notifyUser;
+Notification.requestPermission().then(result => {
+  if (result === 'granted') {
+    notifyUser = (msg, opts = {}) => {
+      let notification = new Notification(msg, opts);
+      if (opts.url) {
+        notification.addEventListener('click', () => {
+          notification.close();
+          window.location = opts.url;
+        });
+      }
+    }
+  } else {
+    notifyUser = msg => window.alert(msg);
+  }
+});
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/service-worker.js').then(registration => {
@@ -26,6 +43,16 @@ if ('serviceWorker' in navigator) {
     }).catch(registrationError => {
       console.log('SW registration failed: ', registrationError);
     });
+  });
+
+  navigator.serviceWorker.addEventListener('message', event => {
+    // Optional: ensure the message came from workbox-broadcast-update
+    if (event.data.meta === 'workbox-broadcast-update') {
+      let updatedURL = new URL(event.data.payload.updatedURL);
+      if (updatedURL.pathname === '/') {
+        notifyUser('A new version is available', { url: updatedURL });
+      }
+    }
   });
 }
 
